@@ -23,3 +23,11 @@
 - name: Set hostname to localhost
   hostname:
     name: localhost
+
+# Fix cloudinit dns server not being applied
+- name: "Fixing resolv.conf"
+  shell: |
+    sudo unlink /etc/resolv.conf
+    sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    sudo systemctl restart systemd-resolved.service
+    sudo netplan apply

@@ -19,7 +19,7 @@ variable "vcenter_host" {
 variable "vcenter_folder" {
   type    = string
   description = "VM Network"
-  default = ""
+  default = "VMs-template"
 }
 variable "tools_upgrade_policy" {
   type    = bool

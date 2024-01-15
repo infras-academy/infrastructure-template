@@ -18,8 +18,8 @@ packer {
 data "git-repository" "cwd" {}
 
 locals {
-  buildtime = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
-  build_version     = data.git-repository.cwd.head
+  build_time = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
+  build_version     = substr(local.build_time, 0, 10)
   onMain = data.git-repository.cwd.head == "main"
 
   vcenter_server = "vcenter.chuhuynh.local"
@@ -98,7 +98,7 @@ source "vsphere-iso" "ubuntu-server-base" {
 
   #This is important to convert to a template in Vcenter
   convert_to_template = true
-  notes = "Built by HashiCorp Packer on ${local.buildtime}."
+  notes = "Built by HashiCorp Packer on ${local.build_time}."
 }
 
 build {
