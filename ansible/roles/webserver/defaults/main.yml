@@ -1,0 +1,4 @@
+# Default variables for the webserver role
+# These variables can be overridden by the user in their playbook
+
+nginx_port: 80

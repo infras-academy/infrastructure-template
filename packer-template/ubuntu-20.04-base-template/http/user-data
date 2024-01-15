@@ -1,0 +1,72 @@
+#cloud-config
+autoinstall:
+    version: 1
+    early-commands:
+        # Stop ssh for packer
+        - sudo systemctl stop ssh
+    locale: en_US
+    keyboard:
+        layout: en
+        variant: us
+    # general packages needed for machines - referenced from https://tekanaid.com/posts/hashicorp-packer-build-ubuntu20-04-vmware
+    #packages: [open-vm-tools, openssh-server, net-tools, open-iscsi, ntp, curl, vim, ifupdown, zip, unzip, gnupg2, software-properties-common, apt-transport-https, ca-certificates, lsb-release, python3-pip, jq]
+    packages: [open-vm-tools, openssh-server, cloud-init]
+    identity:
+        hostname: ubuntu-server
+        username: mc
+        password: '$6$rounds=4096$rDCYxU9c5o5Okzui$uIkqq9su/ui9g90istVkodD9B1fclShscHLplGfQGL5oliZ9bPWe.vBwtNuJ1qJErBn40oDBUa.6k0hO/nQoo1'
+    ssh:
+        install-server: yes
+        allow-pw: yes
+        authorized-keys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDBciBh3uykPAUysDLHtLJVI6bm1tbcAU/3TTToYL8oIaInODbO7lgkiIFEbKPhUJ/dxFFZv0mVaFKQ3KztaB5zzQzv5bVIHoDZXxCR94yNfSMxZ2B0/mJSQc+W9aPMQoMEbgTtfih7ODldzq+lMct2Y9MQVjPflsBiSRE+FsWLBSgzJlNdI1gLbBD0XgwJc5qGQ1d+mzLz1ayREDkvRrkGymRCA8NAW/VbepAFiKHQzwiRsZDQ5QlZbzDWp2FPSvoPAXFraojWYrTl6OASME+u1/eeS00T+3pbtwXfCXbZegn5sBbfWAM4iuQHoZ5GFG2sZf8sASh8aomQ8/hiBn4nolSv2AI7jskTrQu7fyI0ZE7FVOMDMJnsuC49O/Solf/hysrMu4XMH+XQ8+bv3PUf7IoEL8aNoxIhAfZwXXJbRxiZzqPnBXo6v6U1lR69LgZziDkFQYIeA4drInbYsDMF5MjWB5I9a37zrFRPpiWB51WA3UMfXZu2PlkZlCUU2b0= mc@mc
+    storage:
+        swap:
+            size: 0
+        config:
+            - type: disk
+              id: disk0
+              path: /dev/sda
+              preserve: false
+              grub_device: true
+              wipe: superblock-recursive
+              preserve: false
+              ptable: gpt
+            - type: partition
+              id: disk0-part0
+              device: disk0
+              flag: bios_grub
+              size: 1MB
+            - type: partition
+              id: disk0-part1
+              device: disk0
+              size: -1
+            - type: lvm_volgroup
+              id: vg0
+              name: vg0
+              devices:
+                - disk0-part1
+            - type: lvm_partition
+              id: lvm_part0
+              name: root-parition
+              volgroup: vg0
+              size: 100%
+            - type: format
+              id: lvm_part0-fs
+              fstype: ext4
+              label: root
+              volume: lvm_part0
+            - id: lvm_part0-fs-mount0
+              type: mount
+              path: /
+              device: lvm_part0-fs
+    apt:
+        primary:
+            - arches: [i386, amd64]
+              uri: "http://archive.ubuntu.com/ubuntu/"
+    user-data:
+      disable_root: false
+    late-commands:
+      - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config
+      - echo 'mc ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/mc
+      - curtin in-target --target=/target -- chmod 440 /etc/sudoers.d/mc

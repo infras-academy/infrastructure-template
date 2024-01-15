@@ -1,0 +1,19 @@
+---
+- name: Update package list and install gpg package
+  become: true
+  apt:
+    name: gpg
+    update_cache: yes
+    state: present
+
+- name: Download the HashiCorp GPG key
+  shell: |
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+- name: Add hashicorp repo
+  shell: |
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) test" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+- name: Update package cache
+  apt:
+    update_cache: yes

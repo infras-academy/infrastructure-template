@@ -1,0 +1,12 @@
+---
+- name: "Install additional packages"
+  include_tasks: additional_packages.yml
+
+# - name: "Set up root CA"
+#   include_tasks: certificate_authority.yml
+
+- name: "SSH Config"
+  include_tasks: ssh_config.yml
+
+- name: "Additional config"
+  include_tasks: additional_config.yml

@@ -1,0 +1,8 @@
+# Handlers file for the webserver role
+# It defines a handler to restart Nginx
+
+- name: Restart Nginx
+  service:
+    name: nginx
+    state: restarted
+  become: yes

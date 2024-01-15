@@ -1,0 +1,13 @@
+---
+- name: Install vault
+  become: true
+  apt:
+    name: vault
+    update_cache: yes
+    state: present
+
+- name: Start Vault service
+  systemd:
+    name: vault
+    state: started
+    enabled: yes

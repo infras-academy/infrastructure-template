@@ -1,0 +1,74 @@
+---
+- name: Create .ssh directory for the user
+  file:
+    path: "/home/{{ BUILD_USERNAME | default('default_build_username') }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ BUILD_USERNAME | default('default_build_username') }}"
+    group: "{{ BUILD_USERNAME | default('default_build_username') }}"
+
+- name: Copy all .pub files to guest VM
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/
+  with_fileglob:
+    - "files/*.pub"
+
+- name: Read public keys from .pub files on guest VM
+  shell: "cat /tmp/{{ item | basename }}"
+  register: public_keys_content
+  with_fileglob:
+    - "/tmp/*.pub"
+
+- name: Add public keys for user {{ BUILD_USERNAME | default('default_build_username') }}
+  lineinfile:
+    path: "/home/{{ BUILD_USERNAME | default('default_build_username') }}/.ssh/authorized_keys"
+    line: "{{ item.stdout }}"
+    create: yes
+    owner: "{{ BUILD_USERNAME | default('default_build_username') }}"
+    group: "{{ BUILD_USERNAME | default('default_build_username') }}"
+    mode: '0644'
+  with_items: "{{ public_keys_content.results }}"
+  when: item.stdout != ""
+
+- name: Set permissions for authorized_keys file
+  file:
+    path: "/home/{{ BUILD_USERNAME | default('default_build_username') }}/.ssh/authorized_keys"
+    state: file
+    mode: '0644'
+    owner: "{{ BUILD_USERNAME | default('default_build_username') }}"
+    group: "{{ BUILD_USERNAME | default('default_build_username') }}"
+
+- name: Ensure the default user is in passwordless sudoers
+  lineinfile:
+    path: /etc/sudoers
+    line: "{{ BUILD_USERNAME | default('default_build_username') }} ALL=(ALL) NOPASSWD:ALL"
+    validate: 'visudo -cf %s'
+    create: yes
+- name: "Configure SSH for Public Key Authentication."
+  shell: |
+    sudo sed -i '/^PermitRootLogin/s/yes/no/' /etc/ssh/sshd_config
+    sudo sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" /etc/ssh/sshd_config
+
+- name: Clear hostname file
+  file:
+    path: /etc/hostname
+    state: touch
+
+- name: Restart SSH Service
+  service:
+    name: sshd
+    state: restarted
+
+- name: "Setting SSH keys to regenerate on reboot, if neccessary."
+  shell: |
+    sudo tee /etc/rc.local << EOF
+    #!/bin/bash
+    test -f /etc/ssh/ssh_host_dsa_key || dpkg-reconfigure openssh-server
+    exit 0
+    EOF
+    sudo chmod +x /etc/rc.local
+    # - name: Remove temporary SSH public key file
+    #   file:
+    #     path: /tmp/id_ecdsa.pub
+    #     state: absent

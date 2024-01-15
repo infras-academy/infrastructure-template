@@ -1,0 +1,5 @@
+# Variables for the webserver role
+# You can define variables specific to this role here
+# For example, you could define the port number, server_name, etc.
+
+nginx_port: 80
