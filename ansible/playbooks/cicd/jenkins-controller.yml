@@ -1,0 +1,78 @@
+# ---
+# # playbook.yml
+- name: 'Install jenkins'
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Wait for /var/lib/dpkg/lock-frontend to be released
+      shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
+
+    - name: Set jenkins_version as env
+      ansible.builtin.set_fact:
+        JENKINS_VERSION: "{{ JENKINS_VERSION }}"
+
+#    - name: My jenkins version
+#      shell: export VERSION=$JENKINS_VERSION
+#      environment:
+#        JENKINS_VERSION: "{{ JENKINS_VERSION }}"
+
+    - name: Install a list of packages
+      ansible.builtin.apt:
+        pkg:
+          - ca-certificates
+          - python3-pip
+          - openjdk-17-jre
+          - fontconfig
+    - name: Install pip3 module
+      ansible.builtin.pip:
+        name: bs4
+        executable: pip3
+    - name: Update package
+      shell: |
+        sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+        https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+        https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+        /etc/apt/sources.list.d/jenkins.list > /dev/null
+        sudo apt-get update -y
+    - name: install jenkins
+      ansible.builtin.apt:
+        name: "jenkins={{ JENKINS_VERSION }}"
+        state: present
+        update_cache: yes
+    - name: Make sure jenkins is not running
+      ansible.builtin.systemd:
+        state: stopped
+        name: jenkins
+    - name: Ensures {{project_root}}/conf dir exists
+      ansible.builtin.file:
+        path: /var/lib/jenkins/init.groovy.d/
+        state: directory
+        mode: '0755'
+    - name: Copy groovy init scripts
+      ansible.builtin.copy:
+        src: ./bootstrap-groovy/
+        dest: /var/lib/jenkins/init.groovy.d/
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Copy bootstrap bash scripts
+      ansible.builtin.copy:
+        src: ./scripts/
+        dest: /var/lib/jenkins/
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Install plugins
+      shell: cd /var/lib/jenkins/ && python3 install-plugins.py -f plugins.txt -v $JENKINS_VERSION -d /var/lib/jenkins/plugins
+      environment:
+        JENKINS_VERSION: "{{ JENKINS_VERSION }}"
+    - name: Clean up
+      shell: cd /var/lib/jenkins/plugins/ && sudo rm -rf */
+    - name: Start jenkins
+      ansible.builtin.systemd:
+        state: started
+        name: jenkins
+        enabled: yes
+#sudo apt install ca-certificates

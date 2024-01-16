@@ -103,14 +103,6 @@ source "vsphere-iso" "ubuntu-server-base" {
 
 build {
   sources = ["source.vsphere-iso.ubuntu-server-base"]
-  // provisioner "shell" {
-  //   execute_command = "echo '${var.ssh_password}' | {{.Vars}} sudo -S -E bash '{{.Path}}'"
-  //   environment_vars = [
-  //     "BUILD_USERNAME=${var.ssh_username}",
-  //   ]
-  //   scripts = var.shell_scripts
-  //   expect_disconnect = true
-  // }
   provisioner "ansible" {
     user          = local.ssh_username
     playbook_file = "${path.cwd}/../../ansible/playbooks/ubuntu-20.04-base.yml"

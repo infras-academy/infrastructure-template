@@ -3,7 +3,7 @@
 # Basic config for datacenter, datastore, host and folder
 variable "vcenter_datacenter" {
   type    = string
-  description = "vCenter URL."
+  description = "vCenter datacenter."
   default = "datacenter1"
 }
 variable "vcenter_datastore" {
@@ -22,26 +22,23 @@ variable "vcenter_folder" {
   default = "VMs-template"
 }
 
+// variable "vcenter_datacenter" {
+//   type    = string
+//   description = "vCenter URL."
+//   default = ""
+// }
 variable "vm_name" {
   type    = string
   description = "The VM name"
-  default = "jenkins-controller-base-template"
 }
 
 variable "template_name" {
   type    = string
   description = "The template name"
-  default = "ubuntu-20.04-base-template"
 }
 
 variable "communicator" {
   type    = string
   description = "The template name"
   default = "ssh"
-}
-
-variable "jenkins_version" {
-  type = string
-  description = "Jenkins controller version to install"
-#  default = "2.426.1"
 }
